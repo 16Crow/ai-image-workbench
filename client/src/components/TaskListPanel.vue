@@ -50,7 +50,10 @@
             </el-tag>
           </div>
           <div class="task-note" v-if="task.status === 'success'">
-            已按你框选的主花型区域处理
+            已完成外部模型处理
+          </div>
+          <div class="task-note" v-if="task.prompt">
+            指令：{{ task.prompt }}
           </div>
           <div class="task-actions">
             <el-button

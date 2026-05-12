@@ -19,14 +19,21 @@ function normalizeTask(task: TaskInfo): TaskInfo {
   }
 }
 
-export async function uploadImage(file: File): Promise<TaskInfo> {
+export async function uploadImage(file: File, prompt: string, model?: string): Promise<TaskInfo> {
   const formData = new FormData()
   formData.append('image', file)
+  formData.append('prompt', prompt)
+  if (model) {
+    formData.append('model', model)
+  }
   const res = await fetch(`${API_BASE}/upload`, {
     method: 'POST',
     body: formData,
   })
-  if (!res.ok) throw new Error('上传失败')
+  if (!res.ok) {
+    const data = await res.json().catch(() => null)
+    throw new Error(data?.error || '上传失败')
+  }
   return normalizeTask(await res.json())
 }
 
@@ -46,7 +53,10 @@ export async function deleteTask(taskId: string): Promise<void> {
   const res = await fetch(`${API_BASE}/task/${taskId}`, {
     method: 'DELETE',
   })
-  if (!res.ok) throw new Error('删除任务失败')
+  if (!res.ok) {
+    const data = await res.json().catch(() => null)
+    throw new Error(data?.error || '删除任务失败')
+  }
 }
 
 export function getDownloadUrl(taskId: string): string {

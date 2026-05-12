@@ -53,6 +53,17 @@
       </div>
     </div>
 
+    <div class="prompt-editor">
+      <div class="prompt-label">处理指令</div>
+      <el-input
+        v-model="promptText"
+        type="textarea"
+        :rows="4"
+        resize="vertical"
+        placeholder="例如：把图里这件衣服改成更干净的电商白底图，保留花纹和版型"
+      />
+    </div>
+
     <div class="upload-actions">
       <el-button
         type="primary"
@@ -62,7 +73,7 @@
         @click="handleSubmit"
       >
         <el-icon><MagicStick /></el-icon>
-        开始提取
+        开始处理
       </el-button>
     </div>
 
@@ -86,7 +97,7 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
-  submit: [file: File]
+  submit: [payload: { file: File; prompt: string }]
 }>()
 
 const uploadRef = ref<UploadInstance>()
@@ -97,6 +108,7 @@ const croppedFile = ref<File | null>(null)
 const cropSummary = ref('')
 const cropConfirmed = ref(false)
 const cropDialogVisible = ref(false)
+const promptText = ref('请根据这张图片完成高质量图像编辑，保持主体清晰、自然、细节完整。')
 
 const cropFileName = computed(() => {
   const ext = selectedFile.value?.name.split('.').pop() || 'png'
@@ -136,7 +148,12 @@ function handleCropConfirm(payload: { file: File; previewUrl: string; summary: s
 
 function handleSubmit() {
   if (!selectedFile.value) return
-  emit('submit', croppedFile.value || selectedFile.value)
+  const prompt = promptText.value.trim()
+  if (!prompt) {
+    ElMessage.warning('请先填写处理指令')
+    return
+  }
+  emit('submit', { file: croppedFile.value || selectedFile.value, prompt })
 }
 
 function reset() {
@@ -247,6 +264,17 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: center;
   margin-top: 22px;
+}
+
+.prompt-editor {
+  margin-top: 18px;
+}
+
+.prompt-label {
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #3f5b4b;
 }
 
 @media (max-width: 720px) {

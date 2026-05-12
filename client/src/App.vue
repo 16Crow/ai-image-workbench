@@ -5,8 +5,8 @@
         <el-icon><MagicStick /></el-icon>
         <span>AI Image Workbench</span>
       </div>
-      <h1>先框选主花型，再做提取</h1>
-      <p>这版先把前端工作流做稳，后续继续往透视拉正、净化和平铺演进。</p>
+      <h1>先框选主体，再做 AI 图片处理</h1>
+      <p>当前版本直接调用外部图像编辑模型，保留上传、任务轮询和结果下载这套工作流。</p>
     </header>
 
     <main class="layout">
@@ -21,9 +21,9 @@
             </div>
           </template>
           <div class="tips-copy">
-            <p>1. 用成熟裁切组件提升框选体验。</p>
-            <p>2. 只上传主花型区域，先把输入质量拉高。</p>
-            <p>3. 后续再叠加透视拉正、阴影净化和花型平铺。</p>
+            <p>1. 先框选真正需要处理的主体区域。</p>
+            <p>2. 在左侧输入清晰的处理指令，告诉模型你想怎么改。</p>
+            <p>3. 上传后由后端转调外部图片编辑接口并返回结果。</p>
           </div>
         </el-card>
       </section>
@@ -54,10 +54,10 @@ const tasks = ref<TaskInfo[]>([])
 const workbenchRef = ref<InstanceType<typeof UploadWorkbench> | null>(null)
 let pollTimer: ReturnType<typeof setInterval> | null = null
 
-async function handleUpload(file: File) {
+async function handleUpload(payload: { file: File; prompt: string }) {
   uploading.value = true
   try {
-    const task = await uploadImage(file)
+    const task = await uploadImage(payload.file, payload.prompt)
     tasks.value.unshift(task)
     ElMessage.success('上传成功，开始处理...')
     workbenchRef.value?.reset()
