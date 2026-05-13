@@ -30,6 +30,23 @@
       </template>
     </el-upload>
 
+    <div class="feature-toolbar">
+      <div class="feature-label">快捷功能</div>
+      <div class="feature-actions">
+        <el-button
+          v-for="feature in features"
+          :key="feature.key"
+          :type="selectedFeatureKey === feature.key ? 'primary' : 'default'"
+          :plain="selectedFeatureKey !== feature.key"
+          round
+          @click="selectedFeatureKey = feature.key"
+        >
+          {{ feature.label }}
+        </el-button>
+      </div>
+      <div class="feature-hint">{{ activeFeature.description }}</div>
+    </div>
+
     <div v-if="selectedImageUrl" class="selection-preview">
       <div class="selection-card">
         <div class="selection-label">原图预览</div>
@@ -51,17 +68,6 @@
         <el-icon><Picture /></el-icon>
         <span>{{ cropSummary }}</span>
       </div>
-    </div>
-
-    <div class="prompt-editor">
-      <div class="prompt-label">处理指令</div>
-      <el-input
-        v-model="promptText"
-        type="textarea"
-        :rows="4"
-        resize="vertical"
-        placeholder="例如：把图里这件衣服改成更干净的电商白底图，保留花纹和版型"
-      />
     </div>
 
     <div class="upload-actions">
@@ -97,8 +103,23 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
-  submit: [payload: { file: File; prompt: string }]
+  submit: [payload: { file: File; prompt: string; featureKey: string; featureLabel: string }]
 }>()
+
+const features = [
+  {
+    key: 'extract-pattern',
+    label: '提取印花',
+    description: '保留主体印花与图案细节，弱化服装结构和背景干扰，适合做花型提取。',
+    prompt: '请提取图片主体区域中的印花图案，尽量保留原始花型、颜色和纹理细节，弱化服装廓形、褶皱、背景和无关区域，让结果更接近平整、清晰、可用于设计参考的印花图。',
+  },
+  {
+    key: 'upscale-hd',
+    label: '转高清',
+    description: '提升清晰度与边缘质量，尽量保持原图内容、颜色和结构不变。',
+    prompt: '请在不改变主体内容、构图和颜色关系的前提下提升图片清晰度，增强边缘与纹理细节，减少模糊和噪点，让结果更清晰、更适合展示与后续设计使用。',
+  },
+] as const
 
 const uploadRef = ref<UploadInstance>()
 const selectedFile = ref<UploadRawFile | null>(null)
@@ -108,7 +129,11 @@ const croppedFile = ref<File | null>(null)
 const cropSummary = ref('')
 const cropConfirmed = ref(false)
 const cropDialogVisible = ref(false)
-const promptText = ref('请根据这张图片完成高质量图像编辑，保持主体清晰、自然、细节完整。')
+const selectedFeatureKey = ref<(typeof features)[number]['key']>('extract-pattern')
+
+const activeFeature = computed(
+  () => features.find(feature => feature.key === selectedFeatureKey.value) || features[0]
+)
 
 const cropFileName = computed(() => {
   const ext = selectedFile.value?.name.split('.').pop() || 'png'
@@ -148,12 +173,12 @@ function handleCropConfirm(payload: { file: File; previewUrl: string; summary: s
 
 function handleSubmit() {
   if (!selectedFile.value) return
-  const prompt = promptText.value.trim()
-  if (!prompt) {
-    ElMessage.warning('请先填写处理指令')
-    return
-  }
-  emit('submit', { file: croppedFile.value || selectedFile.value, prompt })
+  emit('submit', {
+    file: croppedFile.value || selectedFile.value,
+    prompt: activeFeature.value.prompt,
+    featureKey: activeFeature.value.key,
+    featureLabel: activeFeature.value.label,
+  })
 }
 
 function reset() {
@@ -260,21 +285,34 @@ onBeforeUnmount(() => {
   font-weight: 600;
 }
 
+.feature-toolbar {
+  margin-top: 18px;
+}
+
+.feature-label {
+  margin-bottom: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #3f5b4b;
+}
+
+.feature-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.feature-hint {
+  margin-top: 10px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #5d6f63;
+}
+
 .upload-actions {
   display: flex;
   justify-content: center;
   margin-top: 22px;
-}
-
-.prompt-editor {
-  margin-top: 18px;
-}
-
-.prompt-label {
-  margin-bottom: 8px;
-  font-size: 13px;
-  font-weight: 700;
-  color: #3f5b4b;
 }
 
 @media (max-width: 720px) {

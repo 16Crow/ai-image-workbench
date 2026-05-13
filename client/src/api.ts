@@ -2,7 +2,7 @@ import type { TaskInfo } from './types/task'
 
 const API_BASE = '/api'
 const BACKEND_ORIGIN = import.meta.env.DEV
-  ? (import.meta.env.VITE_BACKEND_ORIGIN || 'http://localhost:3000')
+  ? (import.meta.env.VITE_BACKEND_ORIGIN || 'http://localhost:3001')
   : window.location.origin
 
 function toAbsoluteUrl(url?: string): string | undefined {
@@ -19,12 +19,24 @@ function normalizeTask(task: TaskInfo): TaskInfo {
   }
 }
 
-export async function uploadImage(file: File, prompt: string, model?: string): Promise<TaskInfo> {
+export async function uploadImage(payload: {
+  file: File
+  prompt: string
+  model?: string
+  featureKey?: string
+  featureLabel?: string
+}): Promise<TaskInfo> {
   const formData = new FormData()
-  formData.append('image', file)
-  formData.append('prompt', prompt)
-  if (model) {
-    formData.append('model', model)
+  formData.append('image', payload.file)
+  formData.append('prompt', payload.prompt)
+  if (payload.model) {
+    formData.append('model', payload.model)
+  }
+  if (payload.featureKey) {
+    formData.append('featureKey', payload.featureKey)
+  }
+  if (payload.featureLabel) {
+    formData.append('featureLabel', payload.featureLabel)
   }
   const res = await fetch(`${API_BASE}/upload`, {
     method: 'POST',

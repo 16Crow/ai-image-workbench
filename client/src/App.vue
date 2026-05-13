@@ -6,26 +6,11 @@
         <span>AI Image Workbench</span>
       </div>
       <h1>先框选主体，再做 AI 图片处理</h1>
-      <p>当前版本直接调用外部图像编辑模型，保留上传、任务轮询和结果下载这套工作流。</p>
     </header>
 
     <main class="layout">
       <section class="left-column">
         <UploadWorkbench ref="workbenchRef" :uploading="uploading" @submit="handleUpload" />
-
-        <el-card class="panel tips-panel" shadow="never">
-          <template #header>
-            <div class="card-title">
-              <el-icon><InfoFilled /></el-icon>
-              <span>当前阶段</span>
-            </div>
-          </template>
-          <div class="tips-copy">
-            <p>1. 先框选真正需要处理的主体区域。</p>
-            <p>2. 在左侧输入清晰的处理指令，告诉模型你想怎么改。</p>
-            <p>3. 上传后由后端转调外部图片编辑接口并返回结果。</p>
-          </div>
-        </el-card>
       </section>
 
       <section class="right-column">
@@ -54,10 +39,15 @@ const tasks = ref<TaskInfo[]>([])
 const workbenchRef = ref<InstanceType<typeof UploadWorkbench> | null>(null)
 let pollTimer: ReturnType<typeof setInterval> | null = null
 
-async function handleUpload(payload: { file: File; prompt: string }) {
+async function handleUpload(payload: {
+  file: File
+  prompt: string
+  featureKey: string
+  featureLabel: string
+}) {
   uploading.value = true
   try {
-    const task = await uploadImage(payload.file, payload.prompt)
+    const task = await uploadImage(payload)
     tasks.value.unshift(task)
     ElMessage.success('上传成功，开始处理...')
     workbenchRef.value?.reset()

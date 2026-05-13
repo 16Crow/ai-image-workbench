@@ -1,5 +1,7 @@
 const path = require('path')
 
+require('dotenv').config({ path: path.join(__dirname, '.env.local') })
+
 const IMAGE_EDIT_API_URL =
   process.env.IMAGE_EDIT_API_URL || 'https://aibibo.com/v1/images/edits'
 const IMAGE_API_KEY = process.env.IMAGE_API_KEY || process.env.OPENAI_API_KEY || ''

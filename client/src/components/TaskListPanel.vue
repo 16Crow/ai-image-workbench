@@ -19,7 +19,14 @@
         <div class="thumb-column">
           <div class="thumb-block compact">
             <div class="thumb-label">原</div>
-            <el-image v-if="task.originalImage" :src="task.originalImage" fit="cover" class="thumb-img compact" />
+            <el-image
+              v-if="task.originalImage"
+              :src="task.originalImage"
+              fit="cover"
+              class="thumb-img compact"
+              :preview-src-list="getPreviewList(task)"
+              :initial-index="getPreviewInitialIndex(task, 'original')"
+            />
             <div v-else class="thumb-empty">
               <el-icon><Picture /></el-icon>
             </div>
@@ -31,7 +38,8 @@
               :src="task.resultImage"
               fit="contain"
               class="thumb-img compact result-thumb"
-              :preview-src-list="[task.resultImage]"
+              :preview-src-list="getPreviewList(task)"
+              :initial-index="getPreviewInitialIndex(task, 'result')"
             />
             <div v-else class="thumb-empty">
               <el-icon><MagicStick /></el-icon>
@@ -52,7 +60,10 @@
           <div class="task-note" v-if="task.status === 'success'">
             已完成外部模型处理
           </div>
-          <div class="task-note" v-if="task.prompt">
+          <div class="task-note" v-if="task.featureLabel">
+            功能：{{ task.featureLabel }}
+          </div>
+          <div class="task-note" v-else-if="task.prompt">
             指令：{{ task.prompt }}
           </div>
           <div class="task-actions">
@@ -64,6 +75,14 @@
             >
               <el-icon><Download /></el-icon>
               下载
+            </el-button>
+            <el-button
+              v-if="task.originalImage && task.resultImage"
+              size="small"
+              plain
+              @click="openCompare(task)"
+            >
+              对比
             </el-button>
             <el-button
               v-if="task.status === 'failed'"
@@ -83,10 +102,52 @@
       </div>
     </div>
   </el-card>
+
+  <el-dialog
+    v-model="compareVisible"
+    title="原图 / 结果图对比"
+    width="920px"
+    top="6vh"
+    destroy-on-close
+    @closed="handleCompareClosed"
+  >
+    <div v-if="compareTask" class="compare-dialog">
+      <div class="compare-meta">
+        任务 #{{ compareTask.taskId.slice(0, 8) }}，点击图片可继续放大预览
+      </div>
+      <div class="compare-grid">
+        <div class="compare-panel">
+          <div class="compare-title">原图</div>
+          <el-image
+            v-if="compareTask.originalImage"
+            :src="compareTask.originalImage"
+            fit="contain"
+            class="compare-image"
+            :preview-src-list="getPreviewList(compareTask)"
+            :initial-index="getPreviewInitialIndex(compareTask, 'original')"
+          />
+          <div v-else class="compare-empty">暂无原图</div>
+        </div>
+        <div class="compare-panel">
+          <div class="compare-title">结果图</div>
+          <el-image
+            v-if="compareTask.resultImage"
+            :src="compareTask.resultImage"
+            fit="contain"
+            class="compare-image"
+            :preview-src-list="getPreviewList(compareTask)"
+            :initial-index="getPreviewInitialIndex(compareTask, 'result')"
+          />
+          <div v-else class="compare-empty">暂无结果图</div>
+        </div>
+      </div>
+    </div>
+  </el-dialog>
 </template>
 
 <script setup lang="ts">
 import type { TaskInfo } from '../types/task'
+import { ref } from 'vue'
 
 defineProps<{
   tasks: TaskInfo[]
@@ -98,6 +159,27 @@ const emit = defineEmits<{
   delete: [taskId: string]
   showError: [error?: string]
 }>()
+
+const compareVisible = ref(false)
+const compareTask = ref<TaskInfo | null>(null)
+
+function getPreviewList(task: TaskInfo) {
+  return [task.originalImage, task.resultImage].filter((url): url is string => Boolean(url))
+}
+
+function getPreviewInitialIndex(task: TaskInfo, target: 'original' | 'result') {
+  if (target === 'original') return 0
+  return task.originalImage ? 1 : 0
+}
+
+function openCompare(task: TaskInfo) {
+  compareTask.value = task
+  compareVisible.value = true
+}
+
+function handleCompareClosed() {
+  compareTask.value = null
+}
 
 function statusText(status: string) {
   const map: Record<string, string> = {
@@ -259,6 +341,52 @@ function formatTime(dateStr: string) {
   margin-top: 12px;
 }
 
+.compare-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.compare-meta {
+  font-size: 13px;
+  color: #5c7264;
+}
+
+.compare-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.compare-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.compare-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #10241a;
+}
+
+.compare-image,
+.compare-empty {
+  width: 100%;
+  height: 360px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #eef3ef;
+  border: 1px solid rgba(20, 83, 45, 0.08);
+}
+
+.compare-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8fa095;
+}
+
 @media (max-width: 1080px) {
   .task-item {
     grid-template-columns: 1fr;
@@ -268,6 +396,15 @@ function formatTime(dateStr: string) {
 @media (max-width: 720px) {
   .thumb-column {
     grid-template-columns: 1fr;
+  }
+
+  .compare-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .compare-image,
+  .compare-empty {
+    height: 260px;
   }
 }
 </style>

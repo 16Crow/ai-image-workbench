@@ -63,6 +63,8 @@ app.post('/api/upload', upload.single('image'), async (req, res) => {
     const taskId = crypto.randomUUID()
     const prompt = normalizeText(req.body?.prompt) || getDefaultPrompt()
     const model = normalizeText(req.body?.model) || getDefaultModel()
+    const featureKey = normalizeText(req.body?.featureKey)
+    const featureLabel = normalizeText(req.body?.featureLabel)
     const originalUrl = `/uploads/${req.file.filename}`
 
     tasks.set(taskId, {
@@ -74,6 +76,8 @@ app.post('/api/upload', upload.single('image'), async (req, res) => {
       error: null,
       createdAt: new Date().toISOString(),
       filePath: req.file.path,
+      featureKey,
+      featureLabel,
       prompt,
       model,
     })
